@@ -1,0 +1,47 @@
+apply plugin: 'java'
+apply plugin: 'war'
+apply plugin: 'idea'
+apply plugin: 'eclipse'
+
+ext {
+    javaVersion = '1.7'
+    javaEncoding = 'UTF-8'
+    springframeworkVersion = '3.2.3.RELEASE'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+
+    compile "org.springframework:spring-core:${springframeworkVersion}"
+    compile "org.springframework:spring-web:${springframeworkVersion}"
+    compile "org.springframework:spring-webmvc:${springframeworkVersion}"
+    compile "org.springframework:spring-test:${springframeworkVersion}"
+
+    compile "org.springframework.integration:spring-integration-amqp:2.2.0.RELEASE"
+
+    compile 'javax.servlet:servlet-api:2.5'
+    compile 'javax.servlet.jsp:jsp-api:2.1'
+
+    compile 'org.codehaus.jackson:jackson-mapper-asl:1.9.12'
+
+    testCompile 'junit:junit:4.10'
+
+}
+
+task initProject(description: 'initialize project') << {
+    createDir = {
+        println "create source directory: $it"
+        it.mkdirs()
+    }
+    sourceSets*.java.srcDirs*.each createDir
+    sourceSets*.resources.srcDirs*.each createDir
+    createDir webAppDir
+    createDir new File(webAppDir, '/WEB-INF')
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '1.9'
+}

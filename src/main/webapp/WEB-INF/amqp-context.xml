@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:int="http://www.springframework.org/schema/integration"
+       xmlns:int-amqp="http://www.springframework.org/schema/integration/amqp"
+       xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+			http://www.springframework.org/schema/beans/spring-beans.xsd
+			http://www.springframework.org/schema/integration
+			http://www.springframework.org/schema/integration/spring-integration.xsd
+			http://www.springframework.org/schema/integration/amqp
+			http://www.springframework.org/schema/integration/amqp/spring-integration-amqp.xsd
+			http://www.springframework.org/schema/rabbit
+			http://www.springframework.org/schema/rabbit/spring-rabbit.xsd
+			">
+
+	<!-- rabbit connection factory, rabbit template, and rabbit admin -->
+	<import resource="amqp-config.xml" />
+
+	<!-- spring integration flow -->
+	<int:gateway id="messageGateway" service-interface="com.ur_qa.message.MessageGateway" />
+
+	<int:channel id="MessageObject"/>
+
+	<int:header-enricher input-channel="MessageObject" output-channel="newMessage">
+		<!--<int:header name="MessageType" expression="payload.getType()"/>-->
+        <int:header name="MessageType" value="urqa_error"/>
+	</int:header-enricher>
+
+	<int:object-to-json-transformer input-channel="newMessage" output-channel="jsonNewMessage" content-type="text/x-json"/>
+
+	<int:channel id="jsonNewMessage" />
+
+	<!--  To send AMQP Messages to an Exchange, configure an outbound-channel-adapter. -->
+	<int-amqp:outbound-channel-adapter
+			channel="jsonNewMessage"
+			exchange-name="urqa-exchange"
+			routing-key-expression="'msg.'+headers.MessageType"
+			amqp-template="amqpTemplate" />
+
+	<!-- rabbit exchanges, queues, and bindings used by this app -->
+	<rabbit:topic-exchange name="urqa-exchange" auto-delete="false" durable="true">
+		<rabbit:bindings>
+			<rabbit:binding queue="all-messages" pattern="msg.*"/>
+		</rabbit:bindings>
+	</rabbit:topic-exchange>
+
+	<rabbit:queue name="all-messages" auto-delete="false" durable="true"/>
+
+</beans>
